@@ -1,60 +1,99 @@
+﻿using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.Serialization;
 
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] private float torqueAmount = 15f;
-    [SerializeField] private float boostSpeed = 45f;
-    [SerializeField] private float normalSpeed = 25f;
-    [SerializeField] bool canPlay;
-    private Rigidbody2D _rb2D;
-    private SurfaceEffector2D _surfaceEffector2D;
-    
-    private void Start()
+    private bool _canMove = true;
+
+    [Header("Speed Settings")]
+    [SerializeField] float normalSpeed = 10f;
+    [SerializeField] float boostSpeed = 20f;
+
+    [Header("Torque Settings")]
+    [SerializeField] float torque = 30f;
+
+    // Speed modifier system
+    private float currentSpeedModifier = 1f;
+    private Coroutine speedModifierCoroutine;
+
+    Rigidbody2D rbdy;
+
+    void Start()
     {
-        canPlay = true;
-        _rb2D = GetComponent<Rigidbody2D>();
-        _surfaceEffector2D = FindObjectOfType<SurfaceEffector2D>();
+        rbdy = GetComponent<Rigidbody2D>();
     }
 
-    private void Update()
+    void Update()
     {
-        if (canPlay)
-        {
-            RotatePlayer();
-            RespondToBoost();
-        }
+        if (!_canMove) return;
+
+        HandleRotation();
+        HandleMovement();
     }
 
     public void DisableInput()
     {
-        canPlay = false;
+        _canMove = false;
+        rbdy.linearVelocity = Vector2.zero; // Dừng chuyển động ngay lập tức
+        rbdy.angularVelocity = 0f; // Dừng xoay
+    }
+    public void EnableInput() {
+        _canMove = true;
     }
 
-    private void RespondToBoost()
-    {
-        if (Input.GetKey(KeyCode.UpArrow))
-        {
-            _surfaceEffector2D.speed = boostSpeed;
-        } 
-        else if (Input.GetKey(KeyCode.DownArrow))
-        {
-            _surfaceEffector2D.speed = normalSpeed;
-        }
-    }
-
-    private void RotatePlayer()
+    void HandleRotation()
     {
         if (Input.GetKey(KeyCode.LeftArrow))
         {
-            _rb2D.AddTorque(torqueAmount);
+            rbdy.AddTorque(torque);
         }
-
         else if (Input.GetKey(KeyCode.RightArrow))
         {
-            _rb2D.AddTorque(-torqueAmount);
+            rbdy.AddTorque(-torque);
         }
+    }
+
+    void HandleMovement()
+    {
+        float baseSpeed = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)
+            ? boostSpeed
+            : normalSpeed;
+
+        // Áp dụng speed modifier
+        float finalSpeed = baseSpeed * currentSpeedModifier;
+
+        rbdy.linearVelocity = new Vector2(finalSpeed, rbdy.linearVelocity.y);
+    }
+
+    // Method để các obstacle gọi
+    public void ApplySpeedModifier(float modifier, float duration)
+    {
+        // Dừng coroutine cũ nếu có
+        if (speedModifierCoroutine != null)
+        {
+            StopCoroutine(speedModifierCoroutine);
+        }
+
+        // Bắt đầu coroutine mới
+        speedModifierCoroutine = StartCoroutine(SpeedModifierCoroutine(modifier, duration));
+    }
+
+    private IEnumerator SpeedModifierCoroutine(float modifier, float duration)
+    {
+        currentSpeedModifier = modifier;
+
+        // Đợi trong thời gian effect
+        yield return new WaitForSeconds(duration);
+
+        // Khôi phục tốc độ bình thường
+        currentSpeedModifier = 1f;
+
+        Debug.Log("Speed restored to normal!");
+    }
+
+    // Getter để các script khác có thể check tốc độ hiện tại
+    public float GetCurrentSpeedModifier()
+    {
+        return currentSpeedModifier;
     }
 }
