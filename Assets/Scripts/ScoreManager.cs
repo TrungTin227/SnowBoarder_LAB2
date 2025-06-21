@@ -327,12 +327,3 @@ public class ScoreManager : MonoBehaviour
     // FIX: Thêm variable bị thiếu
     private float jumpHeight = 0f;
 }
-
-// FIX: Sửa enum theo yêu cầu 10, 25, 50, 100
-public enum CollectibleType
-{
-    Coin,        // 10 điểm
-    SilverCoin,  // 25 điểm  
-    GoldCoin,    // 50 điểm
-    Diamond      // 100 điểm
-}

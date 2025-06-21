@@ -78,23 +78,30 @@ public class PlayerController : MonoBehaviour
         }
 
         // Trick controls (thêm cho việc ghi điểm trick)
-        if (!isGrounded)
+        if (Input.GetKeyDown(KeyCode.Q))
         {
-            // Q key - thêm điểm trick nếu đang trong không khí
-            if (Input.GetKeyDown(KeyCode.Q))
+            // Kiểm tra trạng thái grounded NGAY LÚC NÀY
+            bool groundedNow = Physics2D.Raycast(transform.position, Vector2.down, 1.2f, LayerMask.GetMask("Default")) &&
+                               Physics2D.Raycast(transform.position, Vector2.down, 1.2f).collider.CompareTag("Ground");
+
+            if (!groundedNow)
             {
-                PerformTrick("Manual Trick", 75);
+                PerformTrick("Manual Trick", 50);
+            }
+            else
+            {
+                Debug.Log("❌ Không thể trick khi đang đứng trên mặt đất!");
             }
         }
     }
 
     void PerformTrick(string trickName, int points)
     {
-        // FIX: Sử dụng method đúng của ScoreManager
+        // Chỉ gọi khi đã xác nhận player đang bay!
         if (ScoreManager.Instance != null)
         {
-            ScoreManager.Instance.PerformManualTrick(trickName); // Thay vì AddScore trực tiếp
-            Debug.Log($"Performed {trickName}!");
+            ScoreManager.Instance.PerformManualTrick(trickName);
+            Debug.Log($"✅ Đã trick: {trickName}");
         }
     }
 
