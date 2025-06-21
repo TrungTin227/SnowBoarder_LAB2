@@ -90,9 +90,10 @@ public class PlayerController : MonoBehaviour
 
     void PerformTrick(string trickName, int points)
     {
+        // FIX: Sử dụng method đúng của ScoreManager
         if (ScoreManager.Instance != null)
         {
-            ScoreManager.Instance.AddScore(points, trickName);
+            ScoreManager.Instance.PerformManualTrick(trickName); // Thay vì AddScore trực tiếp
             Debug.Log($"Performed {trickName}!");
         }
     }
