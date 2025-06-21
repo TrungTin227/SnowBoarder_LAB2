@@ -22,7 +22,7 @@ public class CrashDetect : MonoBehaviour
         if (isInvulnerable || (playerController != null && playerController.IsInvincible()))
             return;
 
-        if (other.CompareTag("Obstacle") || other.CompareTag("Enemy"))
+        if (other.CompareTag("Obstacle"))
         {
             HandleCrash();
         }

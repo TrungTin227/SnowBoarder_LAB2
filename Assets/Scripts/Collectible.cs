@@ -46,7 +46,8 @@ public class Collectible : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        // FIX: Kiểm tra cẩn thận và tránh double collect
+        Debug.Log($"🟡 COIN TRIGGERED by: {other.name} with tag: {other.tag}");
+
         if (other.CompareTag("Player") && !isCollected)
         {
             Debug.Log($"🪙 Player chạm vào {type}!");
