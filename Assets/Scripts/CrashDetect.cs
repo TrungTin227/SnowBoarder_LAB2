@@ -6,17 +6,22 @@ public class CrashDetect : MonoBehaviour
 {
     [Header("Crash Settings")]
     [SerializeField] private int maxCrashes = 3;
-    [SerializeField] private float invulnerabilityTime = 1f; // Thời gian bất tử sau crash
+    [SerializeField] private float invulnerabilityTime = 1f;
 
     private int crashCount = 0;
     private bool isInvulnerable = false;
+    private PlayerController playerController;
+
+    void Start()
+    {
+        playerController = GetComponent<PlayerController>();
+    }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // Kiểm tra nếu đang trong thời gian bất tử
-        if (isInvulnerable) return;
+        if (isInvulnerable || (playerController != null && playerController.IsInvincible()))
+            return;
 
-        // Kiểm tra tag của obstacle
         if (other.CompareTag("Obstacle") || other.CompareTag("Enemy"))
         {
             HandleCrash();
@@ -25,12 +30,18 @@ public class CrashDetect : MonoBehaviour
 
     public void HandleCrash()
     {
-        if (isInvulnerable) return;
+        if (isInvulnerable || (playerController != null && playerController.IsInvincible()))
+            return;
 
         crashCount++;
         Debug.Log("Damn, it hits hard! Crash count: " + crashCount + "/" + maxCrashes);
 
-        // Bắt đầu thời gian bất tử
+        // Reset combo khi crash
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.ResetComboOnCrash();
+        }
+
         StartCoroutine(InvulnerabilityCoroutine());
 
         if (crashCount >= maxCrashes)
@@ -43,30 +54,16 @@ public class CrashDetect : MonoBehaviour
     private IEnumerator InvulnerabilityCoroutine()
     {
         isInvulnerable = true;
-
-        // Có thể thêm hiệu ứng nhấp nháy ở đây
-
         yield return new WaitForSeconds(invulnerabilityTime);
-
         isInvulnerable = false;
     }
 
     private IEnumerator RestartLevel()
     {
-        // Có thể thêm delay và hiệu ứng trước khi restart
         yield return new WaitForSeconds(1f);
-
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    // Getter để UI có thể hiển thị số crash
-    public int GetCrashCount()
-    {
-        return crashCount;
-    }
-
-    public int GetMaxCrashes()
-    {
-        return maxCrashes;
-    }
+    public int GetCrashCount() => crashCount;
+    public int GetMaxCrashes() => maxCrashes;
 }
