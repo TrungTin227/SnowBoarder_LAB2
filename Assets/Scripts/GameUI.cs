@@ -19,6 +19,8 @@ public class GameUI : MonoBehaviour
     [SerializeField] private Color reducedSpeedColor = Color.red;
     [SerializeField] private Color superBoostColor = Color.yellow;
     [SerializeField] private Color comboColor = Color.orange;
+    [SerializeField] private Color powerUpActiveColor = Color.green; // Màu khi active
+    [SerializeField] private Color powerUpInactiveColor = Color.white; // Màu khi inactive
 
     private PlayerController playerController;
     private CrashDetect crashDetect;
@@ -54,12 +56,12 @@ public class GameUI : MonoBehaviour
 
             if (playerController.HasSuperBoost())
             {
-                speedStatus = "SUPER BOOST!";
+                speedStatus = "🚀 SUPER BOOST!";
                 speedText.color = superBoostColor;
             }
             else
             {
-                speedStatus = $"Speed: {(speedModifier * 100):F0}%";
+                speedStatus = $"⚡ Speed: {(speedModifier * 100):F0}%";
                 speedText.color = speedModifier < 1f ? reducedSpeedColor : normalSpeedColor;
             }
 
@@ -84,7 +86,15 @@ public class GameUI : MonoBehaviour
         {
             int currentCrashes = crashDetect.GetCrashCount();
             int maxCrashes = crashDetect.GetMaxCrashes();
-            crashCountText.text = $"Crashes: {currentCrashes}/{maxCrashes}";
+            crashCountText.text = $"💥 Crashes: {currentCrashes}/{maxCrashes}";
+
+            // Đổi màu dựa trên số lần crash
+            if (currentCrashes >= maxCrashes - 1)
+                crashCountText.color = Color.red;
+            else if (currentCrashes >= maxCrashes / 2)
+                crashCountText.color = Color.yellow;
+            else
+                crashCountText.color = Color.white;
         }
     }
 
@@ -96,17 +106,18 @@ public class GameUI : MonoBehaviour
 
             if (playerController.IsInvincible())
             {
-                powerUpStatus += "INVINCIBLE! ";
+                powerUpStatus += "🛡️ INVINCIBLE! ";
+                powerUpText.color = powerUpActiveColor;
             }
-
-            if (playerController.HasSuperBoost())
+            else if (playerController.HasSuperBoost())
             {
-                powerUpStatus += "SUPER BOOST! ";
+                powerUpStatus += "🚀 SUPER BOOST! ";
+                powerUpText.color = powerUpActiveColor;
             }
-
-            if (string.IsNullOrEmpty(powerUpStatus))
+            else
             {
                 powerUpStatus = "SPACE (Invincible) | X (Super Boost) | Q (Trick)";
+                powerUpText.color = powerUpInactiveColor;
             }
 
             powerUpText.text = powerUpStatus;
@@ -117,7 +128,7 @@ public class GameUI : MonoBehaviour
     {
         if (scoreText != null)
         {
-            scoreText.text = $"Score: {newScore:N0}";
+            scoreText.text = $"🏆 Score: {newScore:N0}";
         }
     }
 
@@ -127,19 +138,20 @@ public class GameUI : MonoBehaviour
         {
             if (combo > 0)
             {
-                comboText.text = $"COMBO x{combo} ({multiplier:F1}x)";
+                comboText.text = $"🔥 COMBO x{combo} ({multiplier:F1}x)";
                 comboText.color = comboColor;
             }
             else
             {
-                comboText.text = "";
+                comboText.text = "Ready for Combo!";
+                comboText.color = Color.gray;
             }
         }
 
         if (comboBar != null)
         {
             comboBar.fillAmount = combo > 0 ? Mathf.Clamp01(combo / 10f) : 0f;
-            comboBar.color = comboColor;
+            comboBar.color = combo > 0 ? comboColor : Color.gray;
         }
     }
 
@@ -157,17 +169,42 @@ public class GameUI : MonoBehaviour
 
     System.Collections.IEnumerator ShowTrickMessageCoroutine(string message)
     {
-        trickText.text = message;
+        // Hiệu ứng xuất hiện
+        trickText.text = $"✨ {message} ✨";
         trickText.color = Color.yellow;
 
-        yield return new WaitForSeconds(2f);
+        // Scale animation
+        trickText.transform.localScale = Vector3.one * 1.2f;
+
+        float timer = 0f;
+        while (timer < 0.3f)
+        {
+            timer += Time.deltaTime;
+            float scale = Mathf.Lerp(1.2f, 1f, timer / 0.3f);
+            trickText.transform.localScale = Vector3.one * scale;
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(1.5f);
+
+        // Fade out
+        timer = 0f;
+        Color startColor = trickText.color;
+        while (timer < 0.5f)
+        {
+            timer += Time.deltaTime;
+            float alpha = Mathf.Lerp(1f, 0f, timer / 0.5f);
+            trickText.color = new Color(startColor.r, startColor.g, startColor.b, alpha);
+            yield return null;
+        }
 
         trickText.text = "";
+        trickText.color = Color.yellow;
+        trickText.transform.localScale = Vector3.one;
     }
 
     void OnDestroy()
     {
-        // Unsubscribe from events
         if (ScoreManager.Instance != null)
         {
             ScoreManager.Instance.OnScoreChanged -= UpdateScoreDisplay;
