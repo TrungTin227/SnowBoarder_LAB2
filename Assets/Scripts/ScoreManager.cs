@@ -5,21 +5,20 @@ using UnityEngine;
 public class ScoreManager : MonoBehaviour
 {
     [Header("Collectible Score Settings")]
-    [SerializeField] private int coinScore = 10;           // Đồng xu thường
-    [SerializeField] private int silverCoinScore = 25;     // Đồng xu bạc  
-    [SerializeField] private int goldCoinScore = 50;       // Đồng xu vàng
-    [SerializeField] private int diamondScore = 100;       // Kim cương
+    [SerializeField] private int coinScore = 10;
+    [SerializeField] private int silverCoinScore = 25;
+    [SerializeField] private int goldCoinScore = 50;
+    [SerializeField] private int diamondScore = 100;
 
-    [Header("Speed Milestone Settings - Phương án 2")]
-    [SerializeField]
-    private SpeedMilestone[] speedMilestones = new SpeedMilestone[]
-    {
-        new SpeedMilestone(10f, 50, "Speed Boost!"),
-        new SpeedMilestone(15f, 100, "Fast Rider!"),
-        new SpeedMilestone(20f, 200, "Speed Demon!"),
-        new SpeedMilestone(25f, 500, "Lightning Fast!"),
-        new SpeedMilestone(30f, 1000, "SUPERSONIC!")
-    };
+    [Header("Speed Boost Score Settings")]
+    [SerializeField] private int normalBoostScore = 100;     // Shift boost
+    [SerializeField] private int superBoostScore = 400;      // X super boost
+    [SerializeField] private int megaBoostScore = 800;       // Phím mới (ví dụ: C)
+
+    [Header("Speed Boost Tracking")]
+    private bool wasUsingNormalBoost = false;
+    private bool wasUsingSuperBoost = false;
+    private bool wasUsingMegaBoost = false;
 
     [Header("Trick Settings")]
     [SerializeField] private int manualTrickScore = 50;
@@ -34,9 +33,6 @@ public class ScoreManager : MonoBehaviour
     private float comboMultiplier = 1f;
     private float lastComboTime = 0f;
 
-    // Speed milestone tracking - FIX: Không tính điểm liên tục nữa
-    private HashSet<int> achievedMilestones = new HashSet<int>();
-
     // Trick detection
     private bool isAirborne = false;
     private float airTime = 0f;
@@ -44,8 +40,9 @@ public class ScoreManager : MonoBehaviour
     private float lastRotation = 0f;
     private float maxJumpHeight = 0f;
     private Vector3 lastPosition;
+    private float jumpHeight = 0f;
 
-    // Components - FIX: Tìm GameObject "Tim"
+    // Components
     private PlayerController playerController;
     private Rigidbody2D playerRb;
 
@@ -53,24 +50,9 @@ public class ScoreManager : MonoBehaviour
     public System.Action<int> OnScoreChanged;
     public System.Action<int, float> OnComboChanged;
     public System.Action<string> OnTrickPerformed;
-    public System.Action<string> OnSpeedMilestone; // Thông báo milestone
+    public System.Action<string> OnSpeedBoostUsed; // Thông báo speed boost
 
     public static ScoreManager Instance { get; private set; }
-
-    [System.Serializable]
-    public class SpeedMilestone
-    {
-        public float speedThreshold;
-        public int bonusPoints;
-        public string message;
-
-        public SpeedMilestone(float speed, int points, string msg)
-        {
-            speedThreshold = speed;
-            bonusPoints = points;
-            message = msg;
-        }
-    }
 
     void Awake()
     {
@@ -86,7 +68,6 @@ public class ScoreManager : MonoBehaviour
 
     void Start()
     {
-        // FIX: Tìm GameObject "Tim" thay vì FindObjectOfType
         GameObject timPlayer = GameObject.Find("Tim");
         if (timPlayer != null)
         {
@@ -114,27 +95,36 @@ public class ScoreManager : MonoBehaviour
     {
         if (playerController == null || playerRb == null) return;
 
-        CheckSpeedMilestones(); // FIX: Thay thế UpdateSpeedScore
+        CheckSpeedBoostUsage(); // Thay thế CheckSpeedMilestones
         UpdateComboSystem();
         DetectTricks();
     }
 
-    // FIX: Thay thế hệ thống tính điểm tốc độ cũ
-    void CheckSpeedMilestones()
+    // HỆ THỐNG MỚI: Cộng điểm khi người chơi chủ động sử dụng speed boost
+    void CheckSpeedBoostUsage()
     {
-        float currentSpeed = Mathf.Abs(playerRb.linearVelocity.x);
+        bool isUsingNormalBoost = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        bool isUsingSuperBoost = playerController.HasSuperBoost();
 
-        for (int i = 0; i < speedMilestones.Length; i++)
+        // Kiểm tra nếu bắt đầu sử dụng Normal Boost (Shift)
+        if (isUsingNormalBoost && !wasUsingNormalBoost)
         {
-            // Chỉ trigger milestone 1 lần duy nhất
-            if (currentSpeed >= speedMilestones[i].speedThreshold && !achievedMilestones.Contains(i))
-            {
-                achievedMilestones.Add(i);
-                AddScore(speedMilestones[i].bonusPoints, "Speed Milestone");
-                OnSpeedMilestone?.Invoke($"{speedMilestones[i].message} +{speedMilestones[i].bonusPoints}");
-                Debug.Log($"🚀 Speed Milestone: {speedMilestones[i].message} - {currentSpeed:F1} m/s");
-            }
+            AddScore(normalBoostScore, "Normal Boost");
+            OnSpeedBoostUsed?.Invoke($"Speed Boost! +{normalBoostScore}");
+            Debug.Log($"🚀 Normal Boost activated! +{normalBoostScore} points");
         }
+
+        // Kiểm tra nếu bắt đầu sử dụng Super Boost (X)
+        if (isUsingSuperBoost && !wasUsingSuperBoost)
+        {
+            AddScore(superBoostScore, "Super Boost");
+            OnSpeedBoostUsed?.Invoke($"SUPER BOOST! +{superBoostScore}");
+            Debug.Log($"⚡ Super Boost activated! +{superBoostScore} points");
+        }
+
+        // Cập nhật trạng thái
+        wasUsingNormalBoost = isUsingNormalBoost;
+        wasUsingSuperBoost = isUsingSuperBoost;
     }
 
     void UpdateComboSystem()
@@ -144,7 +134,6 @@ public class ScoreManager : MonoBehaviour
             ResetCombo();
         }
 
-        // FIX: Làm rõ công thức combo multiplier
         comboMultiplier = 1f + (currentCombo * 0.5f);
         comboMultiplier = Mathf.Min(comboMultiplier, maxComboMultiplier);
     }
@@ -160,14 +149,12 @@ public class ScoreManager : MonoBehaviour
         {
             airTime += Time.deltaTime;
 
-            // Tính toán độ cao nhảy
             jumpHeight = playerController.transform.position.y - lastPosition.y;
             if (jumpHeight > maxJumpHeight)
             {
                 maxJumpHeight = jumpHeight;
             }
 
-            // Tính toán rotation
             float currentRotation = playerController.transform.eulerAngles.z;
             float rotationDelta = Mathf.DeltaAngle(lastRotation, currentRotation);
             totalRotation += Mathf.Abs(rotationDelta);
@@ -253,7 +240,6 @@ public class ScoreManager : MonoBehaviour
         }
     }
 
-    // FIX: Thay thế CollectItem bằng CollectCoin với đúng giá trị
     public void CollectCoin(CollectibleType type)
     {
         int points = GetCollectiblePoints(type);
@@ -263,20 +249,18 @@ public class ScoreManager : MonoBehaviour
         Debug.Log($"🪙 Collected {type}: +{points * (int)comboMultiplier} points");
     }
 
-    // FIX: Đúng giá trị đồng xu theo yêu cầu
     int GetCollectiblePoints(CollectibleType type)
     {
         switch (type)
         {
-            case CollectibleType.Coin: return coinScore;        // 10
-            case CollectibleType.SilverCoin: return silverCoinScore; // 25
-            case CollectibleType.GoldCoin: return goldCoinScore;     // 50
-            case CollectibleType.Diamond: return diamondScore;       // 100
+            case CollectibleType.Coin: return coinScore;
+            case CollectibleType.SilverCoin: return silverCoinScore;
+            case CollectibleType.GoldCoin: return goldCoinScore;
+            case CollectibleType.Diamond: return diamondScore;
             default: return coinScore;
         }
     }
 
-    // FIX: Sửa PerformTrick để dùng đúng interface
     public void PerformManualTrick(string trickName)
     {
         if (isAirborne)
@@ -317,13 +301,10 @@ public class ScoreManager : MonoBehaviour
     public float GetComboMultiplier() => comboMultiplier;
     public float GetCurrentSpeed() => playerRb != null ? Mathf.Abs(playerRb.linearVelocity.x) : 0f;
 
-    // Legacy support - để không break existing code
+    // Legacy support
     public void CollectItem(int points)
     {
         AddScore(points, "Legacy Collectible");
         IncrementCombo();
     }
-
-    // FIX: Thêm variable bị thiếu
-    private float jumpHeight = 0f;
 }

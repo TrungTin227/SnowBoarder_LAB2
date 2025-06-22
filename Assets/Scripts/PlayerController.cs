@@ -9,6 +9,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float normalSpeed = 10f;
     [SerializeField] float boostSpeed = 20f;
     [SerializeField] float superBoostSpeed = 30f;
+    [SerializeField] float megaBoostSpeed = 40f; // Tốc độ mới
 
     [Header("Torque Settings")]
     [SerializeField] float torque = 30f;
@@ -16,6 +17,7 @@ public class PlayerController : MonoBehaviour
     [Header("Power-up Settings")]
     [SerializeField] private float invincibilityDuration = 5f;
     [SerializeField] private float superBoostDuration = 3f;
+    [SerializeField] private float megaBoostDuration = 2f; // Thời gian ngắn hơn vì mạnh hơn
 
     // Speed modifier system
     private float currentSpeedModifier = 1f;
@@ -24,8 +26,10 @@ public class PlayerController : MonoBehaviour
     // Power-up system
     private bool isInvincible = false;
     private bool hasSuperBoost = false;
+    private bool hasMegaBoost = false; // Boost mới
     private Coroutine invincibilityCoroutine;
     private Coroutine superBoostCoroutine;
+    private Coroutine megaBoostCoroutine; // Coroutine mới
 
     // Trick detection helper
     private bool isGrounded = true;
@@ -52,35 +56,38 @@ public class PlayerController : MonoBehaviour
     {
         wasGrounded = isGrounded;
 
-        // Kiểm tra ground bằng raycast
         RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, 1.2f);
         isGrounded = hit.collider != null && hit.collider.CompareTag("Ground");
 
-        // Thông báo cho score manager về trạng thái nhảy
         if (wasGrounded && !isGrounded && ScoreManager.Instance != null)
         {
-            // Bắt đầu nhảy - có thể trigger trick detection
+            // Bắt đầu nhảy
         }
     }
 
     void HandlePowerUps()
     {
-        // Kích hoạt bất khả chiến bại (Space)
+        // Bất khả chiến bại (Space)
         if (Input.GetKeyDown(KeyCode.Space))
         {
             ActivateInvincibility();
         }
 
-        // Kích hoạt siêu tăng tốc (X)
+        // Siêu tăng tốc (X)
         if (Input.GetKeyDown(KeyCode.X))
         {
             ActivateSuperBoost();
         }
 
-        // Trick controls (thêm cho việc ghi điểm trick)
+        // MEGA BOOST mới (C) - Mạnh nhất nhưng thời gian ngắn
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            ActivateMegaBoost();
+        }
+
+        // Trick controls
         if (Input.GetKeyDown(KeyCode.Q))
         {
-            // Kiểm tra trạng thái grounded NGAY LÚC NÀY
             bool groundedNow = Physics2D.Raycast(transform.position, Vector2.down, 1.2f, LayerMask.GetMask("Default")) &&
                                Physics2D.Raycast(transform.position, Vector2.down, 1.2f).collider.CompareTag("Ground");
 
@@ -97,7 +104,6 @@ public class PlayerController : MonoBehaviour
 
     void PerformTrick(string trickName, int points)
     {
-        // Chỉ gọi khi đã xác nhận player đang bay!
         if (ScoreManager.Instance != null)
         {
             ScoreManager.Instance.PerformManualTrick(trickName);
@@ -125,6 +131,17 @@ public class PlayerController : MonoBehaviour
         superBoostCoroutine = StartCoroutine(SuperBoostCoroutine());
     }
 
+    // PHƯƠNG THỨC MỚI
+    public void ActivateMegaBoost()
+    {
+        if (megaBoostCoroutine != null)
+        {
+            StopCoroutine(megaBoostCoroutine);
+        }
+
+        megaBoostCoroutine = StartCoroutine(MegaBoostCoroutine());
+    }
+
     private IEnumerator InvincibilityCoroutine()
     {
         isInvincible = true;
@@ -145,6 +162,18 @@ public class PlayerController : MonoBehaviour
 
         hasSuperBoost = false;
         Debug.Log("Super boost ended!");
+    }
+
+    // COROUTINE MỚI
+    private IEnumerator MegaBoostCoroutine()
+    {
+        hasMegaBoost = true;
+        Debug.Log("🔥 MEGA BOOST activated!");
+
+        yield return new WaitForSeconds(megaBoostDuration);
+
+        hasMegaBoost = false;
+        Debug.Log("Mega boost ended!");
     }
 
     public void DisableInput()
@@ -175,7 +204,12 @@ public class PlayerController : MonoBehaviour
     {
         float baseSpeed = normalSpeed;
 
-        if (hasSuperBoost)
+        // Ưu tiên Mega Boost > Super Boost > Normal Boost
+        if (hasMegaBoost)
+        {
+            baseSpeed = megaBoostSpeed;
+        }
+        else if (hasSuperBoost)
         {
             baseSpeed = superBoostSpeed;
         }
@@ -216,5 +250,6 @@ public class PlayerController : MonoBehaviour
     public float GetCurrentSpeedModifier() => currentSpeedModifier;
     public bool IsInvincible() => isInvincible;
     public bool HasSuperBoost() => hasSuperBoost;
+    public bool HasMegaBoost() => hasMegaBoost; // Getter mới
     public bool IsGrounded() => isGrounded;
 }
