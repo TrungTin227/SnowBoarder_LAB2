@@ -62,8 +62,8 @@ public class GameUI : MonoBehaviour
 
     void CreateSpeedBoostUI()
     {
-        // Tự động tạo UI nếu chưa có
-        if (speedBoostPanel == null)
+        // CHỈ TẠO UI NẾU CHƯA CÓ VÀ AutoUICreator KHÔNG TẠO
+        if (speedBoostPanel == null && !FindObjectOfType<AutoUICreator>())
         {
             Canvas canvas = FindObjectOfType<Canvas>();
             if (canvas == null)
@@ -81,6 +81,9 @@ public class GameUI : MonoBehaviour
 
     void CreateAdvancedSpeedBoostPanel(GameObject parent)
     {
+        // KIỂM TRA XEM CÓ TopPanel HAY KHÔNG
+        bool hasTopPanel = parent.transform.Find("TopPanel") != null;
+
         // Main Speed Boost Panel
         speedBoostPanel = new GameObject("SpeedBoostPanel");
         speedBoostPanel.transform.SetParent(parent.transform);
@@ -88,7 +91,17 @@ public class GameUI : MonoBehaviour
         RectTransform panelRect = speedBoostPanel.AddComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(0, 1);
         panelRect.anchorMax = new Vector2(0, 1);
-        panelRect.anchoredPosition = new Vector2(20, -20);
+
+        // ĐIỀU CHỈNH VỊ TRÍ DỰA TRÊN TopPanel
+        if (hasTopPanel)
+        {
+            panelRect.anchoredPosition = new Vector2(20, -120); // Dịch xuống dưới TopPanel
+        }
+        else
+        {
+            panelRect.anchoredPosition = new Vector2(20, -20); // Vị trí ban đầu
+        }
+
         panelRect.sizeDelta = new Vector2(320, 200);
         panelRect.localScale = Vector3.one;
 
@@ -115,6 +128,8 @@ public class GameUI : MonoBehaviour
         // Instructions
         CreateInstructionsDisplay(speedBoostPanel.transform);
     }
+
+    // ... giữ nguyên tất cả các method khác
 
     void CreateCurrentStatusDisplay(Transform parent)
     {

@@ -76,8 +76,8 @@ public class AutoUICreator : MonoBehaviour
         // Mega Boost Button  
         CreateBoostButton(speedBoostPanel.transform, "MegaBoostBtn", "🔥 MEGA BOOST (C)", Color.red, "C");
 
-        // Add SpeedBoostUI component
-        SpeedBoostUI uiManager = speedBoostPanel.AddComponent<SpeedBoostUI>();
+        // REMOVED: SpeedBoostUI uiManager = speedBoostPanel.AddComponent<SpeedBoostUI>();
+        // GameUI sẽ tự động quản lý UI này
 
         return speedBoostPanel;
     }

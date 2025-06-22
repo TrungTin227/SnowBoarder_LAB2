@@ -9,7 +9,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float normalSpeed = 10f;
     [SerializeField] float boostSpeed = 20f;
     [SerializeField] float superBoostSpeed = 30f;
-    [SerializeField] float megaBoostSpeed = 40f; // Tốc độ mới
+    [SerializeField] float megaBoostSpeed = 40f;
 
     [Header("Torque Settings")]
     [SerializeField] float torque = 30f;
@@ -17,7 +17,12 @@ public class PlayerController : MonoBehaviour
     [Header("Power-up Settings")]
     [SerializeField] private float invincibilityDuration = 5f;
     [SerializeField] private float superBoostDuration = 3f;
-    [SerializeField] private float megaBoostDuration = 2f; // Thời gian ngắn hơn vì mạnh hơn
+    [SerializeField] private float megaBoostDuration = 2f;
+
+    [Header("Cooldown Settings")]
+    [SerializeField] private float invincibilityCooldown = 10f;
+    [SerializeField] private float superBoostCooldown = 5f;
+    [SerializeField] private float megaBoostCooldown = 8f;
 
     // Speed modifier system
     private float currentSpeedModifier = 1f;
@@ -26,10 +31,15 @@ public class PlayerController : MonoBehaviour
     // Power-up system
     private bool isInvincible = false;
     private bool hasSuperBoost = false;
-    private bool hasMegaBoost = false; // Boost mới
+    private bool hasMegaBoost = false;
     private Coroutine invincibilityCoroutine;
     private Coroutine superBoostCoroutine;
-    private Coroutine megaBoostCoroutine; // Coroutine mới
+    private Coroutine megaBoostCoroutine;
+
+    // Cooldown timers - THÊM MỚI
+    private float invincibilityCooldownRemaining = 0f;
+    private float superBoostCooldownRemaining = 0f;
+    private float megaBoostCooldownRemaining = 0f;
 
     // Trick detection helper
     private bool isGrounded = true;
@@ -50,6 +60,20 @@ public class PlayerController : MonoBehaviour
         HandleRotation();
         HandleMovement();
         HandlePowerUps();
+        UpdateCooldowns(); // THÊM MỚI
+    }
+
+    // THÊM METHOD MỚI
+    void UpdateCooldowns()
+    {
+        if (invincibilityCooldownRemaining > 0)
+            invincibilityCooldownRemaining -= Time.deltaTime;
+
+        if (superBoostCooldownRemaining > 0)
+            superBoostCooldownRemaining -= Time.deltaTime;
+
+        if (megaBoostCooldownRemaining > 0)
+            megaBoostCooldownRemaining -= Time.deltaTime;
     }
 
     void UpdateGroundState()
@@ -79,27 +103,11 @@ public class PlayerController : MonoBehaviour
             ActivateSuperBoost();
         }
 
-        // MEGA BOOST mới (C) - Mạnh nhất nhưng thời gian ngắn
+        // MEGA BOOST mới (C)
         if (Input.GetKeyDown(KeyCode.C))
         {
             ActivateMegaBoost();
         }
-
-        // Trick controls
-        //if (Input.GetKeyDown(KeyCode.Q))
-        //{
-        //    bool groundedNow = Physics2D.Raycast(transform.position, Vector2.down, 1.2f, LayerMask.GetMask("Default")) &&
-        //                       Physics2D.Raycast(transform.position, Vector2.down, 1.2f).collider.CompareTag("Ground");
-
-        //    if (!groundedNow)
-        //    {
-        //        PerformTrick("Manual Trick", 50);
-        //    }
-        //    else
-        //    {
-        //        Debug.Log("❌ Không thể trick khi đang đứng trên mặt đất!");
-        //    }
-        //}
     }
 
     void PerformTrick(string trickName, int points)
@@ -113,6 +121,13 @@ public class PlayerController : MonoBehaviour
 
     public void ActivateInvincibility()
     {
+        // THÊM COOLDOWN CHECK
+        if (invincibilityCooldownRemaining > 0)
+        {
+            Debug.Log($"Invincibility on cooldown: {invincibilityCooldownRemaining:F1}s remaining");
+            return;
+        }
+
         if (invincibilityCoroutine != null)
         {
             StopCoroutine(invincibilityCoroutine);
@@ -123,6 +138,13 @@ public class PlayerController : MonoBehaviour
 
     public void ActivateSuperBoost()
     {
+        // THÊM COOLDOWN CHECK
+        if (superBoostCooldownRemaining > 0)
+        {
+            Debug.Log($"Super Boost on cooldown: {superBoostCooldownRemaining:F1}s remaining");
+            return;
+        }
+
         if (superBoostCoroutine != null)
         {
             StopCoroutine(superBoostCoroutine);
@@ -131,9 +153,15 @@ public class PlayerController : MonoBehaviour
         superBoostCoroutine = StartCoroutine(SuperBoostCoroutine());
     }
 
-    // PHƯƠNG THỨC MỚI
     public void ActivateMegaBoost()
     {
+        // THÊM COOLDOWN CHECK
+        if (megaBoostCooldownRemaining > 0)
+        {
+            Debug.Log($"Mega Boost on cooldown: {megaBoostCooldownRemaining:F1}s remaining");
+            return;
+        }
+
         if (megaBoostCoroutine != null)
         {
             StopCoroutine(megaBoostCoroutine);
@@ -150,6 +178,7 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(invincibilityDuration);
 
         isInvincible = false;
+        invincibilityCooldownRemaining = invincibilityCooldown; // THÊM COOLDOWN
         Debug.Log("Invincibility ended!");
     }
 
@@ -161,10 +190,10 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(superBoostDuration);
 
         hasSuperBoost = false;
+        superBoostCooldownRemaining = superBoostCooldown; // THÊM COOLDOWN
         Debug.Log("Super boost ended!");
     }
 
-    // COROUTINE MỚI
     private IEnumerator MegaBoostCoroutine()
     {
         hasMegaBoost = true;
@@ -173,6 +202,7 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(megaBoostDuration);
 
         hasMegaBoost = false;
+        megaBoostCooldownRemaining = megaBoostCooldown; // THÊM COOLDOWN
         Debug.Log("Mega boost ended!");
     }
 
@@ -250,6 +280,11 @@ public class PlayerController : MonoBehaviour
     public float GetCurrentSpeedModifier() => currentSpeedModifier;
     public bool IsInvincible() => isInvincible;
     public bool HasSuperBoost() => hasSuperBoost;
-    public bool HasMegaBoost() => hasMegaBoost; // Getter mới
+    public bool HasMegaBoost() => hasMegaBoost;
     public bool IsGrounded() => isGrounded;
+
+    // THÊM MISSING COOLDOWN METHODS
+    public float GetInvincibilityCooldownRemaining() => Mathf.Max(0f, invincibilityCooldownRemaining);
+    public float GetSuperBoostCooldownRemaining() => Mathf.Max(0f, superBoostCooldownRemaining);
+    public float GetMegaBoostCooldownRemaining() => Mathf.Max(0f, megaBoostCooldownRemaining);
 }
