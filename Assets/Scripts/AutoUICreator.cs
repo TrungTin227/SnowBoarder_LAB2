@@ -4,296 +4,242 @@ using TMPro;
 
 public class AutoUICreator : MonoBehaviour
 {
-    [ContextMenu("Create Complete UI")]
-    public void CreateCompleteUI()
+    [Header("UI Settings")]
+    [SerializeField] private bool createSpeedBoostUI = true;
+    [SerializeField] private bool createAdvancedSpeedUI = true;
+
+    void Start()
     {
-        // Xóa UI cũ nếu có
-        GameObject oldCanvas = GameObject.Find("GameCanvas");
-        if (oldCanvas != null)
+        CreateGameUI();
+    }
+
+    void CreateGameUI()
+    {
+        // Create Canvas if doesn't exist
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if (canvas == null)
         {
-            DestroyImmediate(oldCanvas);
+            GameObject canvasObj = new GameObject("GameCanvas");
+            canvas = canvasObj.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvasObj.AddComponent<CanvasScaler>();
+            canvasObj.AddComponent<GraphicRaycaster>();
         }
 
-        // 1. TẠO CANVAS CHÍNH
-        GameObject gameCanvas = CreateCanvas();
+        if (createSpeedBoostUI)
+        {
+            CreateSpeedBoostPanel(canvas.gameObject);
+        }
 
-        // 2. TẠO TOP PANEL
-        GameObject topPanel = CreateTopPanel(gameCanvas);
-        CreateTopPanelElements(topPanel);
-
-        // 3. TẠO CENTER PANEL  
-        CreateCenterPanel(gameCanvas);
-
-        // 4. TẠO BOTTOM PANEL
-        CreateBottomPanel(gameCanvas);
-
-        Debug.Log("✅ UI Created Successfully! Assign references to GameUI script.");
-        Debug.Log("📍 Elements created: SpeedText, SpeedBar, ScoreText, ComboText, ComboBar, CrashText, TrickText, PowerUpText");
+        if (createAdvancedSpeedUI)
+        {
+            CreateAdvancedSpeedUI(canvas.gameObject);
+        }
     }
 
-    GameObject CreateCanvas()
+    GameObject CreateSpeedBoostPanel(GameObject parent)
     {
-        // Tạo Canvas
-        GameObject canvasGO = new GameObject("GameCanvas");
-        Canvas canvas = canvasGO.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 10;
+        // Main Speed Boost Panel
+        GameObject speedBoostPanel = new GameObject("SpeedBoostPanel");
+        speedBoostPanel.transform.SetParent(parent.transform);
 
-        // Canvas Scaler
-        CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.matchWidthOrHeight = 0.5f;
-
-        // Graphic Raycaster
-        canvasGO.AddComponent<GraphicRaycaster>();
-
-        return canvasGO;
-    }
-
-    GameObject CreateTopPanel(GameObject canvas)
-    {
-        GameObject topPanel = new GameObject("TopPanel");
-        topPanel.transform.SetParent(canvas.transform);
-
-        RectTransform rect = topPanel.AddComponent<RectTransform>();
-
-        // Anchor Top Stretch
-        rect.anchorMin = new Vector2(0, 1);
-        rect.anchorMax = new Vector2(1, 1);
-        rect.anchoredPosition = new Vector2(0, -60);
-        rect.sizeDelta = new Vector2(0, 120);
-        rect.localScale = Vector3.one;
-
-        // Background (optional)
-        Image bg = topPanel.AddComponent<Image>();
-        bg.color = new Color(0, 0, 0, 0.2f);
-
-        return topPanel;
-    }
-
-    void CreateTopPanelElements(GameObject topPanel)
-    {
-        // SPEED PANEL (Top-Left)
-        GameObject speedPanel = CreateSpeedPanel(topPanel);
-
-        // SCORE TEXT (Top-Center-Left)  
-        CreateScoreText(topPanel);
-
-        // COMBO PANEL (Top-Center)
-        CreateComboPanel(topPanel);
-
-        // CRASH TEXT (Top-Right)
-        CreateCrashText(topPanel);
-    }
-
-    GameObject CreateSpeedPanel(GameObject parent)
-    {
-        GameObject speedPanel = new GameObject("SpeedPanel");
-        speedPanel.transform.SetParent(parent.transform);
-
-        RectTransform rect = speedPanel.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0, 0.5f);
-        rect.anchorMax = new Vector2(0, 0.5f);
-        rect.anchoredPosition = new Vector2(140, 0);
-        rect.sizeDelta = new Vector2(250, 80);
-        rect.localScale = Vector3.one;
+        RectTransform panelRect = speedBoostPanel.AddComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0, 1);
+        panelRect.anchorMax = new Vector2(0, 1);
+        panelRect.anchoredPosition = new Vector2(20, -20);
+        panelRect.sizeDelta = new Vector2(320, 220);
+        panelRect.localScale = Vector3.one;
 
         // Background
-        Image bg = speedPanel.AddComponent<Image>();
-        bg.color = new Color(0.1f, 0.1f, 0.1f, 0.7f);
+        Image panelBg = speedBoostPanel.AddComponent<Image>();
+        panelBg.color = new Color(0.1f, 0.1f, 0.1f, 0.85f);
 
-        // Vertical Layout
-        VerticalLayoutGroup layout = speedPanel.AddComponent<VerticalLayoutGroup>();
+        // Layout
+        VerticalLayoutGroup layout = speedBoostPanel.AddComponent<VerticalLayoutGroup>();
         layout.spacing = 8f;
-        layout.padding = new RectOffset(10, 10, 15, 10);
+        layout.padding = new RectOffset(15, 15, 15, 15);
         layout.childControlWidth = true;
         layout.childControlHeight = false;
-        layout.childForceExpandWidth = true;
+
+        // Title
+        CreateTextElement("Title", speedBoostPanel.transform, "⚡ POWER-UP SYSTEM", 18, Color.yellow);
+
+        // Current Speed Display
+        CreateCurrentSpeedDisplay(speedBoostPanel.transform);
+
+        // Invincibility Button
+        CreateBoostButton(speedBoostPanel.transform, "InvincibilityBtn", "🛡️ INVINCIBILITY (Space)", Color.gold, "Space");
+
+        // Super Boost Button
+        CreateBoostButton(speedBoostPanel.transform, "SuperBoostBtn", "⚡ SUPER BOOST (X)", Color.cyan, "X");
+
+        // Mega Boost Button  
+        CreateBoostButton(speedBoostPanel.transform, "MegaBoostBtn", "🔥 MEGA BOOST (C)", Color.red, "C");
+
+        // Add SpeedBoostUI component
+        SpeedBoostUI uiManager = speedBoostPanel.AddComponent<SpeedBoostUI>();
+
+        return speedBoostPanel;
+    }
+
+    void CreateCurrentSpeedDisplay(Transform parent)
+    {
+        GameObject speedDisplay = new GameObject("CurrentSpeedDisplay");
+        speedDisplay.transform.SetParent(parent);
+
+        RectTransform rect = speedDisplay.AddComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(0, 30);
+
+        HorizontalLayoutGroup layout = speedDisplay.AddComponent<HorizontalLayoutGroup>();
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.spacing = 10f;
 
         // Speed Text
-        GameObject speedText = CreateTextElement("SpeedText", speedPanel.transform,
-            "⚡ Speed: 100%", 20, Color.white);
+        GameObject speedText = CreateTextElement("SpeedText", speedDisplay.transform, "Speed: 100%", 16, Color.white);
 
         // Speed Bar Background
-        GameObject speedBarBG = CreateBarBackground("SpeedBarBG", speedPanel.transform,
-            new Color(0.3f, 0.3f, 0.3f, 0.8f));
+        GameObject speedBarBG = new GameObject("SpeedBarBG");
+        speedBarBG.transform.SetParent(speedDisplay.transform);
 
-        // Speed Bar
-        GameObject speedBar = CreateFillBar("SpeedBar", speedPanel.transform, Color.green);
+        RectTransform bgRect = speedBarBG.AddComponent<RectTransform>();
+        bgRect.sizeDelta = new Vector2(100, 20);
 
-        return speedPanel;
+        Image bgImage = speedBarBG.AddComponent<Image>();
+        bgImage.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
+
+        // Speed Bar Fill
+        GameObject speedBar = new GameObject("SpeedBar");
+        speedBar.transform.SetParent(speedBarBG.transform);
+
+        RectTransform fillRect = speedBar.AddComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
+
+        Image fillImage = speedBar.AddComponent<Image>();
+        fillImage.color = Color.green;
+        fillImage.type = Image.Type.Filled;
+        fillImage.fillMethod = Image.FillMethod.Horizontal;
     }
 
-    void CreateScoreText(GameObject parent)
+    GameObject CreateBoostButton(Transform parent, string name, string text, Color color, string key)
     {
-        GameObject scoreText = CreateTextElement("ScoreText", parent.transform,
-            "🏆 Score: 0", 26, Color.white);
+        GameObject buttonObj = new GameObject(name);
+        buttonObj.transform.SetParent(parent);
 
-        RectTransform rect = scoreText.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.3f, 0.5f);
-        rect.anchorMax = new Vector2(0.3f, 0.5f);
-        rect.anchoredPosition = new Vector2(0, 0);
-        rect.sizeDelta = new Vector2(200, 50);
+        RectTransform rect = buttonObj.AddComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(0, 35);
+
+        // Button component
+        Button button = buttonObj.AddComponent<Button>();
+        Image buttonImage = buttonObj.AddComponent<Image>();
+        buttonImage.color = new Color(color.r * 0.3f, color.g * 0.3f, color.b * 0.3f, 0.8f);
+
+        // Button colors
+        ColorBlock colors = button.colors;
+        colors.normalColor = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+        colors.highlightedColor = new Color(color.r * 0.5f, color.g * 0.5f, color.b * 0.5f, 0.9f);
+        colors.pressedColor = color;
+        colors.disabledColor = new Color(0.1f, 0.1f, 0.1f, 0.5f);
+        button.colors = colors;
+
+        // Button layout
+        HorizontalLayoutGroup layout = buttonObj.AddComponent<HorizontalLayoutGroup>();
+        layout.childControlWidth = false;
+        layout.childControlHeight = true;
+        layout.spacing = 10f;
+        layout.padding = new RectOffset(10, 10, 5, 5);
+
+        // Button Text
+        GameObject textObj = CreateTextElement("ButtonText", buttonObj.transform, text, 14, Color.white);
+        RectTransform textRect = textObj.GetComponent<RectTransform>();
+        textRect.sizeDelta = new Vector2(180, 0);
+
+        // Cooldown Fill (background for cooldown)
+        GameObject cooldownBG = new GameObject("CooldownBG");
+        cooldownBG.transform.SetParent(buttonObj.transform);
+
+        RectTransform cooldownRect = cooldownBG.AddComponent<RectTransform>();
+        cooldownRect.sizeDelta = new Vector2(40, 25);
+
+        Image cooldownBGImage = cooldownBG.AddComponent<Image>();
+        cooldownBGImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+
+        // Cooldown Fill
+        GameObject cooldownFill = new GameObject("CooldownFill");
+        cooldownFill.transform.SetParent(cooldownBG.transform);
+
+        RectTransform fillRect = cooldownFill.AddComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
+
+        Image fillImage = cooldownFill.AddComponent<Image>();
+        fillImage.color = color;
+        fillImage.type = Image.Type.Filled;
+        fillImage.fillMethod = Image.FillMethod.Vertical;
+
+        // Cooldown Text
+        GameObject cooldownText = CreateTextElement("CooldownText", cooldownBG.transform, "Ready!", 10, Color.white);
+        RectTransform cooldownTextRect = cooldownText.GetComponent<RectTransform>();
+        cooldownTextRect.anchorMin = Vector2.zero;
+        cooldownTextRect.anchorMax = Vector2.one;
+        cooldownTextRect.offsetMin = Vector2.zero;
+        cooldownTextRect.offsetMax = Vector2.zero;
+
+        return buttonObj;
     }
 
-    GameObject CreateComboPanel(GameObject parent)
+    GameObject CreateAdvancedSpeedUI(GameObject parent)
     {
-        GameObject comboPanel = new GameObject("ComboPanel");
-        comboPanel.transform.SetParent(parent.transform);
+        // Advanced Speed Panel (right side)
+        GameObject advancedPanel = new GameObject("AdvancedSpeedPanel");
+        advancedPanel.transform.SetParent(parent.transform);
 
-        RectTransform rect = comboPanel.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = new Vector2(0, 0);
-        rect.sizeDelta = new Vector2(250, 80);
+        RectTransform rect = advancedPanel.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1, 1);
+        rect.anchorMax = new Vector2(1, 1);
+        rect.anchoredPosition = new Vector2(-20, -20);
+        rect.sizeDelta = new Vector2(220, 120);
         rect.localScale = Vector3.one;
 
         // Background
-        Image bg = comboPanel.AddComponent<Image>();
+        Image bg = advancedPanel.AddComponent<Image>();
         bg.color = new Color(0.1f, 0.1f, 0.1f, 0.7f);
 
-        // Vertical Layout
-        VerticalLayoutGroup layout = comboPanel.AddComponent<VerticalLayoutGroup>();
-        layout.spacing = 8f;
-        layout.padding = new RectOffset(10, 10, 15, 10);
-        layout.childControlWidth = true;
-        layout.childControlHeight = false;
-        layout.childForceExpandWidth = true;
+        // Layout
+        VerticalLayoutGroup layout = advancedPanel.AddComponent<VerticalLayoutGroup>();
+        layout.spacing = 5f;
+        layout.padding = new RectOffset(10, 10, 10, 10);
 
-        // Combo Text
-        GameObject comboText = CreateTextElement("ComboText", comboPanel.transform,
-            "🔥 Ready for Combo!", 20, Color.orange);
+        // Instructions
+        CreateTextElement("Instructions0", advancedPanel.transform, "🎮 CONTROLS", 14, Color.yellow);
+        CreateTextElement("Instructions1", advancedPanel.transform, "Shift: Normal Boost", 12, Color.gray);
+        CreateTextElement("Instructions2", advancedPanel.transform, "Space: Invincibility", 12, Color.gold);
+        CreateTextElement("Instructions3", advancedPanel.transform, "X: Super Boost", 12, Color.cyan);
+        CreateTextElement("Instructions4", advancedPanel.transform, "C: Mega Boost", 12, Color.red);
+        CreateTextElement("Instructions5", advancedPanel.transform, "Q: Trick (in air)", 12, Color.yellow);
 
-        // Combo Bar Background
-        GameObject comboBarBG = CreateBarBackground("ComboBarBG", comboPanel.transform,
-            new Color(0.3f, 0.3f, 0.3f, 0.8f));
-
-        // Combo Bar
-        GameObject comboBar = CreateFillBar("ComboBar", comboPanel.transform, Color.orange);
-
-        return comboPanel;
-    }
-
-    void CreateCrashText(GameObject parent)
-    {
-        GameObject crashText = CreateTextElement("CrashText", parent.transform,
-            "💥 Crashes: 0/3", 18, Color.red);
-
-        RectTransform rect = crashText.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(1, 0.5f);
-        rect.anchorMax = new Vector2(1, 0.5f);
-        rect.anchoredPosition = new Vector2(-100, 0);
-        rect.sizeDelta = new Vector2(150, 50);
-    }
-
-    void CreateCenterPanel(GameObject canvas)
-    {
-        GameObject centerPanel = new GameObject("CenterPanel");
-        centerPanel.transform.SetParent(canvas.transform);
-
-        RectTransform rect = centerPanel.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = Vector2.zero;
-        rect.sizeDelta = new Vector2(500, 100);
-        rect.localScale = Vector3.one;
-
-        // Trick Text
-        GameObject trickText = CreateTextElement("TrickText", centerPanel.transform,
-            "", 36, Color.yellow);
-
-        // Set full size
-        RectTransform trickRect = trickText.GetComponent<RectTransform>();
-        trickRect.anchorMin = Vector2.zero;
-        trickRect.anchorMax = Vector2.one;
-        trickRect.offsetMin = Vector2.zero;
-        trickRect.offsetMax = Vector2.zero;
-
-        // Add outline effect
-        TextMeshProUGUI trickTMP = trickText.GetComponent<TextMeshProUGUI>();
-        trickTMP.fontStyle = FontStyles.Bold;
-        trickTMP.alignment = TextAlignmentOptions.Center;
-    }
-
-    void CreateBottomPanel(GameObject canvas)
-    {
-        GameObject bottomPanel = new GameObject("BottomPanel");
-        bottomPanel.transform.SetParent(canvas.transform);
-
-        RectTransform rect = bottomPanel.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0, 0);
-        rect.anchorMax = new Vector2(1, 0);
-        rect.anchoredPosition = new Vector2(0, 50);
-        rect.sizeDelta = new Vector2(0, 100);
-        rect.localScale = Vector3.one;
-
-        // Background
-        Image bg = bottomPanel.AddComponent<Image>();
-        bg.color = new Color(0, 0, 0, 0.3f);
-
-        // Power-up Text
-        GameObject powerUpText = CreateTextElement("PowerUpText", bottomPanel.transform,
-            "SPACE (Invincible) | X (Super Boost) | Q (Trick)", 18, Color.white);
-
-        // Set full size  
-        RectTransform powerRect = powerUpText.GetComponent<RectTransform>();
-        powerRect.anchorMin = Vector2.zero;
-        powerRect.anchorMax = Vector2.one;
-        powerRect.offsetMin = Vector2.zero;
-        powerRect.offsetMax = Vector2.zero;
-
-        TextMeshProUGUI powerTMP = powerUpText.GetComponent<TextMeshProUGUI>();
-        powerTMP.alignment = TextAlignmentOptions.Center;
+        return advancedPanel;
     }
 
     GameObject CreateTextElement(string name, Transform parent, string text, int fontSize, Color color)
     {
-        GameObject textGO = new GameObject(name);
-        textGO.transform.SetParent(parent);
+        GameObject textObj = new GameObject(name);
+        textObj.transform.SetParent(parent);
 
-        TextMeshProUGUI textMesh = textGO.AddComponent<TextMeshProUGUI>();
-        textMesh.text = text;
-        textMesh.fontSize = fontSize;
-        textMesh.color = color;
-        textMesh.alignment = TextAlignmentOptions.Center;
-        textMesh.fontStyle = FontStyles.Bold;
+        RectTransform rect = textObj.AddComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(0, fontSize + 5);
 
-        RectTransform rect = textGO.GetComponent<RectTransform>();
-        rect.localScale = Vector3.one;
+        TextMeshProUGUI textComponent = textObj.AddComponent<TextMeshProUGUI>();
+        textComponent.text = text;
+        textComponent.fontSize = fontSize;
+        textComponent.color = color;
+        textComponent.alignment = TextAlignmentOptions.Center;
 
-        return textGO;
-    }
-
-    GameObject CreateBarBackground(string name, Transform parent, Color color)
-    {
-        GameObject barBG = new GameObject(name);
-        barBG.transform.SetParent(parent);
-
-        Image image = barBG.AddComponent<Image>();
-        image.color = color;
-
-        RectTransform rect = barBG.GetComponent<RectTransform>();
-        rect.localScale = Vector3.one;
-        rect.sizeDelta = new Vector2(0, 12); // Full width, 12px height
-
-        return barBG;
-    }
-
-    GameObject CreateFillBar(string name, Transform parent, Color color)
-    {
-        GameObject barGO = new GameObject(name);
-        barGO.transform.SetParent(parent);
-
-        Image image = barGO.AddComponent<Image>();
-        image.color = color;
-        image.type = Image.Type.Filled;
-        image.fillMethod = Image.FillMethod.Horizontal;
-
-        RectTransform rect = barGO.GetComponent<RectTransform>();
-        rect.localScale = Vector3.one;
-        rect.sizeDelta = new Vector2(0, 12); // Full width, 12px height
-
-        return barGO;
+        return textObj;
     }
 }

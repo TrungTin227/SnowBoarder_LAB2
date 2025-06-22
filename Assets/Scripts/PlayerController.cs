@@ -99,8 +99,8 @@ public class PlayerController : MonoBehaviour
         //    {
         //        Debug.Log("❌ Không thể trick khi đang đứng trên mặt đất!");
         //    }
-    //}
-}
+        //}
+    }
 
     void PerformTrick(string trickName, int points)
     {
