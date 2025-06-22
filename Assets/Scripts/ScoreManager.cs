@@ -105,7 +105,8 @@ public class ScoreManager : MonoBehaviour
     {
         bool isUsingNormalBoost = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         bool isUsingSuperBoost = playerController.HasSuperBoost();
-
+        bool isUsingMegaBoost = 
+          playerController.HasMegaBoost();
         // Kiểm tra nếu bắt đầu sử dụng Normal Boost (Shift)
         if (isUsingNormalBoost && !wasUsingNormalBoost)
         {
@@ -122,9 +123,17 @@ public class ScoreManager : MonoBehaviour
             Debug.Log($"⚡ Super Boost activated! +{superBoostScore} points");
         }
 
+        if (isUsingMegaBoost && !wasUsingMegaBoost)
+        {
+            AddScore(megaBoostScore, "Mega Boost");
+            OnSpeedBoostUsed?.Invoke($"MEGA BOOST! +{megaBoostScore}");
+            Debug.Log($"💥 Mega Boost activated! +{megaBoostScore} points");
+        }
+
         // Cập nhật trạng thái
         wasUsingNormalBoost = isUsingNormalBoost;
         wasUsingSuperBoost = isUsingSuperBoost;
+        wasUsingMegaBoost = isUsingMegaBoost;
     }
 
     void UpdateComboSystem()

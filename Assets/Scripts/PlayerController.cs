@@ -86,21 +86,21 @@ public class PlayerController : MonoBehaviour
         }
 
         // Trick controls
-        if (Input.GetKeyDown(KeyCode.Q))
-        {
-            bool groundedNow = Physics2D.Raycast(transform.position, Vector2.down, 1.2f, LayerMask.GetMask("Default")) &&
-                               Physics2D.Raycast(transform.position, Vector2.down, 1.2f).collider.CompareTag("Ground");
+        //if (Input.GetKeyDown(KeyCode.Q))
+        //{
+        //    bool groundedNow = Physics2D.Raycast(transform.position, Vector2.down, 1.2f, LayerMask.GetMask("Default")) &&
+        //                       Physics2D.Raycast(transform.position, Vector2.down, 1.2f).collider.CompareTag("Ground");
 
-            if (!groundedNow)
-            {
-                PerformTrick("Manual Trick", 50);
-            }
-            else
-            {
-                Debug.Log("❌ Không thể trick khi đang đứng trên mặt đất!");
-            }
-        }
-    }
+        //    if (!groundedNow)
+        //    {
+        //        PerformTrick("Manual Trick", 50);
+        //    }
+        //    else
+        //    {
+        //        Debug.Log("❌ Không thể trick khi đang đứng trên mặt đất!");
+        //    }
+    //}
+}
 
     void PerformTrick(string trickName, int points)
     {
